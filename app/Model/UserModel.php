@@ -265,9 +265,13 @@ class UserModel extends Base
             $values['username'] = trim($values['username']);
         }
 
+        if (isset($values['whatsapp_number'])) {
+            $values['whatsapp_number'] = trim($values['whatsapp_number']);
+        }
+
         $this->helper->model->removeFields($values, array('confirmation', 'current_password'));
         $this->helper->model->resetFields($values, array('is_ldap_user', 'disable_login_form'));
-        $this->helper->model->convertNullFields($values, array('gitlab_id'));
+        $this->helper->model->convertNullFields($values, array('gitlab_id', 'telegram_id'));
         $this->helper->model->convertIntegerFields($values, array('gitlab_id'));
     }
 

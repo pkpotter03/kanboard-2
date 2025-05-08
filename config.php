@@ -44,8 +44,19 @@ define('FILES_DIR', DATA_DIR.DIRECTORY_SEPARATOR.'files');
 // Enable/disable email configuration from the user interface
 define('MAIL_CONFIGURATION', true);
 
+// Load environment variables
+$envFile = __DIR__ . '/.env';
+if (file_exists($envFile)) {
+    $lines = file($envFile, FILE_IGNORE_NEW_LINES | FILE_SKIP_EMPTY_LINES);
+    foreach ($lines as $line) {
+        if (strpos($line, '#') === 0) continue; // Skip comments
+        list($name, $value) = explode('=', $line, 2);
+        $_ENV[trim($name)] = trim($value);
+    }
+}
+
 // E-mail address used for the "From" header (notifications)
-define('MAIL_FROM', 'pratikkumbhar2003@gmail.com');
+define('MAIL_FROM', $_ENV['MAIL_FROM'] ?? '');
 
 // E-mail address used for the "Bcc" header to send a copy of all notifications
 define('MAIL_BCC', '');
@@ -56,16 +67,26 @@ define('MAIL_TRANSPORT', 'smtp');
 // SMTP configuration to use when the "smtp" transport is chosen
 define('MAIL_SMTP_HOSTNAME', 'smtp.gmail.com'); 
 define('MAIL_SMTP_PORT', 587);
-define('MAIL_SMTP_USERNAME', 'pratikkumbhar2003@gmail.com');
-define('MAIL_SMTP_PASSWORD', 'vxqwtofhlmgujjvt');
+define('MAIL_SMTP_USERNAME', $_ENV['MAIL_SMTP_USERNAME'] ?? '');
+define('MAIL_SMTP_PASSWORD', $_ENV['MAIL_SMTP_PASSWORD'] ?? '');
 define('MAIL_SMTP_HELO_NAME', null); // valid: null (default), or FQDN
 define('MAIL_SMTP_ENCRYPTION', 'tls'); // Valid values are null (not a string "null"), "ssl" or "tls"
+
+// Telegram Bot Token for notifications
+define('TELEGRAM_BOT_TOKEN', $_ENV['TELEGRAM_BOT_TOKEN'] ?? '');
+
+// Twilio WhatsApp API Configuration
+define('TWILIO_ACCOUNT_SID', $_ENV['TWILIO_ACCOUNT_SID'] ?? '');
+define('TWILIO_AUTH_TOKEN', $_ENV['TWILIO_AUTH_TOKEN'] ?? '');
+define('TWILIO_WHATSAPP_NUMBER', $_ENV['TWILIO_WHATSAPP_NUMBER'] ?? '');
+
+define('TWILIO_API_URL', 'https://api.twilio.com/2010-04-01/Accounts/' . TWILIO_ACCOUNT_SID . '/Messages.json');
 
 // Sendmail command to use when the transport is "sendmail"
 define('MAIL_SENDMAIL_COMMAND', '/usr/sbin/sendmail -bs');
 
 // Run automatically database migrations
-// If set to false, you will have to run manually the SQL migrations from the CLI during the next Kanboard upgrade
+// If set to false, you will have to run manually the SQL migrations from the CLI ing the next Kanboard upgrade
 // Do not run the migrations from multiple processes at the same time (example: web page + background worker)
 define('DB_RUN_MIGRATIONS', true);
 

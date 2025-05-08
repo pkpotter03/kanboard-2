@@ -22,11 +22,20 @@ class UserNotificationModel extends Base
      */
     public function sendNotifications($event_name, array $event_data)
     {
+        $this->logger->debug('UserNotificationModel::sendNotifications - Starting notifications for event: ' . $event_name);
+        $this->logger->debug('UserNotificationModel::sendNotifications - Event data: ' . json_encode($event_data));
+
         $users = $this->getUsersWithNotificationEnabled($event_data['task']['project_id'], $this->userSession->getId());
+        $this->logger->debug('UserNotificationModel::sendNotifications - Found ' . count($users) . ' users with notifications enabled');
 
         foreach ($users as $user) {
+            $this->logger->debug('UserNotificationModel::sendNotifications - Processing user: ' . $user['username']);
+            
             if ($this->userNotificationFilterModel->shouldReceiveNotification($user, $event_data)) {
+                $this->logger->debug('UserNotificationModel::sendNotifications - User should receive notification');
                 $this->sendUserNotification($user, $event_name, $event_data);
+            } else {
+                $this->logger->debug('UserNotificationModel::sendNotifications - User should not receive notification based on filters');
             }
         }
     }
@@ -41,22 +50,32 @@ class UserNotificationModel extends Base
      */
     public function sendUserNotification(array $user, $event_name, array $event_data)
     {
+        $this->logger->debug('UserNotificationModel::sendUserNotification - Starting notification for user: ' . $user['username']);
+
         $loadedLocales = Translator::$locales;
         Translator::unload();
 
         // Use the user language otherwise use the application language (do not use the session language)
         if (! empty($user['language'])) {
+            $this->logger->debug('UserNotificationModel::sendUserNotification - Using user language: ' . $user['language']);
             Translator::load($user['language']);
         } else {
-            Translator::load($this->configModel->get('application_language', 'en_US'));
+            $appLanguage = $this->configModel->get('application_language', 'en_US');
+            $this->logger->debug('UserNotificationModel::sendUserNotification - Using application language: ' . $appLanguage);
+            Translator::load($appLanguage);
         }
 
-        foreach ($this->userNotificationTypeModel->getSelectedTypes($user['id']) as $type) {
+        $notificationTypes = $this->userNotificationTypeModel->getSelectedTypes($user['id']);
+        $this->logger->debug('UserNotificationModel::sendUserNotification - User notification types: ' . implode(', ', $notificationTypes));
+
+        foreach ($notificationTypes as $type) {
+            $this->logger->debug('UserNotificationModel::sendUserNotification - Sending ' . $type . ' notification');
             $this->userNotificationTypeModel->getType($type)->notifyUser($user, $event_name, $event_data);
         }
 
         // Restore locales
         Translator::$locales = $loadedLocales;
+        $this->logger->debug('UserNotificationModel::sendUserNotification - Notification process completed');
     }
 
     /**
@@ -158,7 +177,7 @@ class UserNotificationModel extends Base
     {
         return $this->db
             ->table(ProjectUserRoleModel::TABLE)
-            ->columns(UserModel::TABLE.'.id', UserModel::TABLE.'.username', UserModel::TABLE.'.name', UserModel::TABLE.'.email', UserModel::TABLE.'.language', UserModel::TABLE.'.notifications_filter')
+            ->columns(UserModel::TABLE.'.id', UserModel::TABLE.'.username', UserModel::TABLE.'.name', UserModel::TABLE.'.email', UserModel::TABLE.'.language', UserModel::TABLE.'.notifications_filter', UserModel::TABLE.'.telegram_id')
             ->join(UserModel::TABLE, 'id', 'user_id')
             ->eq(ProjectUserRoleModel::TABLE.'.project_id', $project_id)
             ->eq(UserModel::TABLE.'.notifications_enabled', '1')
@@ -171,7 +190,7 @@ class UserNotificationModel extends Base
     {
         return $this->db
             ->table(ProjectGroupRoleModel::TABLE)
-            ->columns(UserModel::TABLE.'.id', UserModel::TABLE.'.username', UserModel::TABLE.'.name', UserModel::TABLE.'.email', UserModel::TABLE.'.language', UserModel::TABLE.'.notifications_filter')
+            ->columns(UserModel::TABLE.'.id', UserModel::TABLE.'.username', UserModel::TABLE.'.name', UserModel::TABLE.'.email', UserModel::TABLE.'.language', UserModel::TABLE.'.notifications_filter', UserModel::TABLE.'.telegram_id')
             ->join(GroupMemberModel::TABLE, 'group_id', 'group_id', ProjectGroupRoleModel::TABLE)
             ->join(UserModel::TABLE, 'id', 'user_id', GroupMemberModel::TABLE)
             ->eq(ProjectGroupRoleModel::TABLE.'.project_id', $project_id)

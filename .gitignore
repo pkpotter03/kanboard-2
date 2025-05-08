@@ -1,5 +1,6 @@
 
 .env
+*.env
 # Composer
 /vendor/
 composer.lock
@@ -28,3 +29,4 @@ db.sqlite
 # Cache
 cache/
 *.cache 
+
