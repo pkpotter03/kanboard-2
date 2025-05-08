@@ -29,3 +29,4 @@ db.sqlite
 # Cache
 cache/
 *.cache 
+.env
